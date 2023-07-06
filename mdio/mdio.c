@@ -8,11 +8,11 @@
 #include <linux/sockios.h>
 
 /*
-mdio <dev> <phyid> <r/w> <address> <value>
+mdio <dev> <phyad> <r/w> <address> <value>
 */
 struct mdio_t{
     char dev[20];
-    unsigned char phyid;
+    unsigned char phyad;
     unsigned char dir;
     unsigned long addr;
     unsigned long value;
@@ -20,13 +20,21 @@ struct mdio_t{
 
 void help()
 {
+    printf("mdio -- Ethernet PHY Chip read/write tool on Linux.\n\n");
     printf("Usage:\n");
-    printf("mdio <dev> <phyid> <r/w> <address> [value]\n");
-    printf("     dev: network device name , eg 'eth0'\n");
-    printf("     phyid: PHY ID , eg '1~9'\n");
-    printf("     r/w: data direction, read or write\n");
-    printf("     address: register address, hex\n");
-    printf("     value: the value of write to register , hex\n");
+    printf("mdio <dev> <phyad> <r/w> <address> [value]\n");
+    printf("    dev: network device name , eg 'eth0'\n");
+    printf("    phyad: PHY address , eg '1~9'\n");
+    printf("    r/w: data direction, read or write\n");
+    printf("    address: register address, hex\n");
+    printf("    value: the value of write to register , hex\n\n");
+    printf("Example:\n");
+    printf("~# ./mdio eth0 1 r 1f\n");
+    printf("Read from eth0.1\n");
+    printf("Register 0x001f = 0x0000\n");
+    printf("~# ./mdio eth0 1 w 1f d04\n");
+    printf("Wirte to eth0.1\n");
+    printf("Register 0x001f = 0x0D04\n\n");
 }
 
 int getopts(int argc, char **argv, struct mdio_t *arg)
@@ -39,7 +47,7 @@ int getopts(int argc, char **argv, struct mdio_t *arg)
     strncpy(arg->dev, argv[1], 20);
     arg->dev[19] = '\0';
 
-    arg->phyid = atoi(argv[2]);
+    arg->phyad = atoi(argv[2]);
     arg->dir = argv[3][0]; 
     arg->addr = strtol(argv[4], NULL, 16);
 
@@ -86,7 +94,7 @@ int main(int argc,char **argv)
     strcpy(ifr.ifr_name, m.dev);
 
     struct mii_ioctl_data* mii = (struct mii_ioctl_data*)(&ifr.ifr_data);
-    mii->phy_id  = m.phyid;
+    mii->phy_id  = m.phyad;
     mii->reg_num = m.addr;
     mii->val_out  = 0;
     if(m.dir == 'r')
@@ -103,7 +111,7 @@ int main(int argc,char **argv)
 
     if(m.dir == 'r')
     {
-        printf("Read from %s.%d\n", m.dev, m.phyid);
+        printf("Read from %s.%d\n", m.dev, m.phyad);
         ret = ioctl(fd, SIOCGMIIREG, &ifr);
         if ( ret != -1)
         {            
@@ -116,7 +124,7 @@ int main(int argc,char **argv)
     }
     else
     {
-        printf("Wirte to %s.%d\n", m.dev, m.phyid);
+        printf("Wirte to %s.%d\n", m.dev, m.phyad);
         ret = ioctl(fd, SIOCSMIIREG, &ifr);
         if ( ret != -1)
         {
